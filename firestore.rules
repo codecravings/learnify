@@ -1,0 +1,164 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // HELPER FUNCTIONS
+    // ---------------------------------------------------------------
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isParticipant(battleData) {
+      return isAuthenticated() &&
+        (request.auth.uid == battleData.player1Id || request.auth.uid == battleData.player2Id);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ---------------------------------------------------------------
+    // USERS
+    // Read: anyone | Write: only the user themselves
+    // ---------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) ||
+        (isAuthenticated() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers', 'followerCount']));
+      allow delete: if false;
+
+      // User's achievements subcollection — writable by functions only
+      match /achievements/{achievementId} {
+        allow read: if true;
+        allow write: if false; // Cloud Functions use admin SDK (bypasses rules)
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // BATTLES
+    // Read: anyone | Create: authenticated | Update: participants or joining player
+    // Delete: creator can cancel waiting battles
+    // ---------------------------------------------------------------
+    match /battles/{battleId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (isParticipant(resource.data) ||
+         (resource.data.status == 'waiting' && resource.data.player2Id == ''));
+      allow delete: if isAuthenticated() &&
+        resource.data.player1Id == request.auth.uid &&
+        resource.data.status == 'waiting';
+    }
+
+    // ---------------------------------------------------------------
+    // CHALLENGES
+    // Read: anyone | Create: authenticated | Update: creator only
+    // ---------------------------------------------------------------
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.creatorId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // FORUM POSTS
+    // Read: anyone | Create: authenticated users
+    // ---------------------------------------------------------------
+    match /forum_posts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
+
+      // Solutions subcollection
+      match /solutions/{solutionId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // LEADERBOARDS
+    // Read: anyone | Write: admin / Cloud Functions only
+    // ---------------------------------------------------------------
+    match /leaderboards/{leaderboardId} {
+      allow read: if true;
+      allow write: if false; // Cloud Functions use admin SDK (bypasses rules)
+    }
+
+    // ---------------------------------------------------------------
+    // ACHIEVEMENTS (global definitions)
+    // Read: anyone | Write: admin / Cloud Functions only
+    // ---------------------------------------------------------------
+    match /achievements/{achievementId} {
+      allow read: if true;
+      allow write: if false; // Cloud Functions use admin SDK (bypasses rules)
+    }
+
+    // ---------------------------------------------------------------
+    // LEARNING PATHS
+    // Read: anyone | Write: admin only
+    // ---------------------------------------------------------------
+    match /learning_paths/{pathId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // DAILY CHALLENGES
+    // Read: anyone | Write: Cloud Functions only
+    // ---------------------------------------------------------------
+    match /daily_challenges/{challengeDate} {
+      allow read: if true;
+      allow write: if false; // Cloud Functions use admin SDK (bypasses rules)
+    }
+
+    // ---------------------------------------------------------------
+    // FEED (social activity posts)
+    // Read: anyone | Create: authenticated | Update: authenticated
+    // Delete: author only
+    // ---------------------------------------------------------------
+    match /feed/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // FORUM VOTES subcollection
+    // ---------------------------------------------------------------
+    match /forum_posts/{postId}/votes/{voterId} {
+      allow read: if true;
+      allow write: if isOwner(voterId);
+    }
+
+    // ---------------------------------------------------------------
+    // MATCHMAKING QUEUE
+    // Read/Write: authenticated (own entry only)
+    // ---------------------------------------------------------------
+    match /matchmaking_queue/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+  }
+}

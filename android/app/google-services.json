@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "47440299911",
+    "project_id": "hire-horizon-c47c7",
+    "storage_bucket": "hire-horizon-c47c7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47440299911:android:799c592d9876ce6df1b522",
+        "android_client_info": {
+          "package_name": "com.vidyasetu.vidyasetu"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "47440299911-bd8vjbu0m5rh1g53u0u08n429jue1452.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vidyasetu.vidyasetu",
+            "certificate_hash": "c5e950e9e50d3795172fd24c28f812f97cdca06b"
+          }
+        },
+        {
+          "client_id": "47440299911-co15ce51l0pl554c123e67a4adonmk2h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vidyasetu.vidyasetu",
+            "certificate_hash": "3f2d4819de65c762a1fd9395028945d90f352808"
+          }
+        },
+        {
+          "client_id": "47440299911-l8lhqe72ef1pmnifu263uerp5m68llml.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfQXHv4WJcEowgNFicDm9UTwftHmbcUUo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "47440299911-l8lhqe72ef1pmnifu263uerp5m68llml.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
